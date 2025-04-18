@@ -25,6 +25,9 @@ end top_basys3;
 architecture top_basys3_arch of top_basys3 is
 
     -- signal declarations
+    signal clk_slow     : std_logic;
+    signal floor_val    : std_logic_vector(3 downto 0);
+    signal hex_val      : std_logic_vector(3 downto 0);
     
   
 	-- component declarations
@@ -70,8 +73,34 @@ architecture top_basys3_arch of top_basys3 is
 	
 begin
 	-- PORT MAPS ----------------------------------------
+	 clk_div_inst : clock_divider
+        generic map (
+            k_DIV => 25000000  -- 100MHz / (2*25M) = 2Hz -> 0.5s period
+        )
+        port map (
+            i_clk   => clk,
+            i_reset => btnL,
+            o_clk   => clk_slow
+        );
+        
+         elevator_fsm_inst : elevator_controller_fsm
+        port map (
+            i_clk       => clk_slow,
+            i_reset     => btnR,
+            is_stopped  => sw(0),          -- Switch 0 is the stop input
+            go_up_down  => sw(1),          -- Switch 1 is the up/down input
+            o_floor     => floor_val
+        );
     	
+    	seg_decoder_inst : sevenseg_decoder
+        port map (
+            i_Hex    => floor_val,
+            o_seg_n  => seg
+        );
 	
+	 an <= "1110";
+	 
+	 led <= (15 => clk_slow, others => '0');
 	-- CONCURRENT STATEMENTS ----------------------------
 	
 	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
